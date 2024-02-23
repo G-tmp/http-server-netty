@@ -30,7 +30,7 @@ public class Post extends Method {
     }
 
     public void execute() throws IOException {
-        System.out.println("upload");
+        System.out.println("saving");
         this.readHttpDataChunkByChunk();
     }
 
