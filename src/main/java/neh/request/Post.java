@@ -14,19 +14,21 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 
-public class Post extends Method {
+public class Post extends Request {
     private HttpPostRequestDecoder decoder;
     private HttpData partialContent;
 
     public Post(ChannelHandlerContext ctx, HttpRequest request, HttpPostRequestDecoder decoder) throws URISyntaxException {
         this.ctx = ctx;
-        this.request = request;
+        this.httpRequest = request;
         this.decoder = decoder;
-        this.uri = new URI(request.uri());
+        String fullPath = URLDecoder.decode(request.uri(), StandardCharsets.UTF_8);
+        this.path = fullPath.contains("?") ? fullPath.substring(0, fullPath.indexOf("?")) : fullPath;
     }
 
     public void execute() throws IOException {
@@ -71,7 +73,7 @@ public class Post extends Method {
             FileUpload fileUpload = (FileUpload)data;
             if (fileUpload.isCompleted()) {
                 this.responseContent = "done";
-                File file = new File(new File(Server.HOME, this.uri.getPath()), fileUpload.getFilename());
+                File file = new File(new File(Server.HOME, this.path), fileUpload.getFilename());
 
                 try (FileChannel inputChannel = (new FileInputStream(fileUpload.getFile())).getChannel();
                      FileChannel outputChannel = (new FileOutputStream(file)).getChannel()) {

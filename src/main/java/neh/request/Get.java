@@ -14,7 +14,6 @@ import neh.utils.RangeRequestParser;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -22,17 +21,18 @@ import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 
-public class Get extends Method {
+public class Get extends Request {
     public Get(ChannelHandlerContext ctx, HttpRequest request) throws URISyntaxException {
         this.ctx = ctx;
-        this.request = request;
-        this.uri = new URI(request.uri());
+        this.httpRequest = request;
+        String fullPath = URLDecoder.decode(request.uri(), StandardCharsets.UTF_8);
+        this.path = fullPath.contains("?") ? fullPath.substring(0, fullPath.indexOf("?")) : fullPath;
         this.parseCookie();
         this.parseParameters();
     }
 
     public void execute() throws IOException {
-        File file = new File(Server.HOME, this.uri.getPath());
+        File file = new File(Server.HOME, this.path);
         if (!file.exists()) {
             this.responseContent = HTMLMaker._404();
             this.sendFullResponse(this.ctx.channel(), 404, true);
@@ -46,7 +46,7 @@ public class Get extends Method {
                 }
 
                 cookie.setPath("/");
-                this.redirect(this.ctx.channel(), this.uri.getPath(), cookie);
+                this.redirect(this.ctx.channel(), this.path, cookie);
                 return;
             }
 
@@ -56,25 +56,25 @@ public class Get extends Method {
                 while (cookieIterator.hasNext()) {
                     Cookie cookie = (Cookie) cookieIterator.next();
                     if (cookie.name().equals("showHidden") && cookie.value().equals("true")) {
-                        this.responseContent = HTMLMaker.index(URLDecoder.decode(this.uri.getPath(), StandardCharsets.UTF_8), true);
+                        this.responseContent = HTMLMaker.index(URLDecoder.decode(this.path, StandardCharsets.UTF_8), true);
                         this.sendFullResponse(this.ctx.channel(), 200, false);
                         cookie.setMaxAge(0);
                     } else {
-                        this.responseContent = HTMLMaker.index(URLDecoder.decode(this.uri.getPath(), StandardCharsets.UTF_8), false);
+                        this.responseContent = HTMLMaker.index(URLDecoder.decode(this.path, StandardCharsets.UTF_8), false);
                         this.sendFullResponse(this.ctx.channel(), 200, false);
                     }
                 }
 
             } else {
-                this.responseContent = HTMLMaker.index(URLDecoder.decode(this.uri.getPath(), StandardCharsets.UTF_8), false);
+                this.responseContent = HTMLMaker.index(URLDecoder.decode(this.path, StandardCharsets.UTF_8), false);
                 this.sendFullResponse(this.ctx.channel(), 200, false);
             }
         } else if (file.isFile()) {
             RandomAccessFile raf = new RandomAccessFile(file, "r");
             long fileLength = raf.length();
-            boolean keepAlive = HttpUtil.isKeepAlive(this.request);
+            boolean keepAlive = HttpUtil.isKeepAlive(this.httpRequest);
             String mimeType = Files.probeContentType(file.toPath());
-            String range = this.request.headers().get(HttpHeaderNames.RANGE);
+            String range = this.httpRequest.headers().get(HttpHeaderNames.RANGE);
 
             // 206 partial request
             if (range != null) {

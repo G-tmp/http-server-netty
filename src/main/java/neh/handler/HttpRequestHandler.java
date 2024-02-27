@@ -6,7 +6,7 @@ import io.netty.handler.codec.http.*;
 
 import io.netty.handler.codec.http.multipart.*;
 import neh.request.Get;
-import neh.request.Method;
+import neh.request.Request;
 import neh.request.Post;
 
 import java.net.URLDecoder;
@@ -14,10 +14,10 @@ import java.nio.charset.StandardCharsets;
 
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<HttpObject> {
-    private HttpRequest request;
+    private HttpRequest httpRequest;
     private static final HttpDataFactory FACTORY = new DefaultHttpDataFactory(16 * 1024);
     private HttpPostRequestDecoder decoder;
-    private Method method ;
+    private Request request ;
 
 //    public Set<Cookie> parseCookie() {
 //        String value = this.request.headers().get((CharSequence) HttpHeaderNames.COOKIE);
@@ -31,30 +31,30 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<HttpObject> 
 
     protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
         if (msg instanceof HttpRequest) {
-            this.request = (HttpRequest)msg;
-            String url = URLDecoder.decode(this.request.uri(), StandardCharsets.UTF_8);
+            this.httpRequest = (HttpRequest)msg;
+            String url = URLDecoder.decode(this.httpRequest.uri(), StandardCharsets.UTF_8);
             System.out.print(ctx.channel().remoteAddress() + "\t");
-            System.out.print(this.request.method() + " ");
+            System.out.print(this.httpRequest.method() + " ");
             System.out.print(url);
             System.out.print("\n");
 
             // get
-            if (this.request.method().equals(HttpMethod.GET)) {
-                this.method = new Get(ctx, this.request);
-                this.method.execute();
+            if (this.httpRequest.method().equals(HttpMethod.GET)) {
+                this.request = new Get(ctx, this.httpRequest);
+                this.request.execute();
                 return;
             }
 
             // post
-            if (this.request.method().equals(HttpMethod.POST)) {
+            if (this.httpRequest.method().equals(HttpMethod.POST)) {
                 try {
-                    this.decoder = new HttpPostRequestDecoder(FACTORY, this.request);
+                    this.decoder = new HttpPostRequestDecoder(FACTORY, this.httpRequest);
                 } catch (HttpPostRequestDecoder.ErrorDataDecoderException ex) {
                     ex.printStackTrace();
                     return;
                 }
 
-                this.method = new Post(ctx, this.request, this.decoder);
+                this.request = new Post(ctx, this.httpRequest, this.decoder);
             }
         }
 
@@ -66,19 +66,19 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<HttpObject> 
                 this.decoder.offer(chunk);
             } catch (HttpPostRequestDecoder.ErrorDataDecoderException ex) {
                 ex.printStackTrace();
-                this.method.setContent("500");
-                this.method.sendFullResponse(ctx.channel(), 500, true);
+                this.request.setContent("500");
+                this.request.sendFullResponse(ctx.channel(), 500, true);
                 return;
             }
 
-            this.method.execute();
+            this.request.execute();
 
             if (chunk instanceof LastHttpContent) {
-                this.method.setContent("Foooooooooo~");
-                this.method.sendFullResponse(ctx.channel(), 200, false);
+                this.request.setContent("Foooooooooo~");
+                this.request.sendFullResponse(ctx.channel(), 200, false);
                 this.decoder.destroy();
                 this.decoder = null;
-                this.method.reset();
+                this.request.reset();
             }
         }
 
