@@ -11,10 +11,8 @@ import neh.Server;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -23,7 +21,7 @@ public class Post extends Request {
     private HttpPostRequestDecoder decoder;
     private HttpData partialContent;
 
-    public Post(ChannelHandlerContext ctx, HttpRequest request, HttpPostRequestDecoder decoder) throws URISyntaxException {
+    public Post(ChannelHandlerContext ctx, HttpRequest request, HttpPostRequestDecoder decoder) {
         this.ctx = ctx;
         this.httpRequest = request;
         this.decoder = decoder;
@@ -32,11 +30,11 @@ public class Post extends Request {
     }
 
     public void execute() throws IOException {
-        System.out.println("saving");
+//        System.out.println("saving");
         this.readHttpDataChunkByChunk();
     }
 
-    private void readHttpDataChunkByChunk() {
+    private void readHttpDataChunkByChunk() throws IOException {
         if (this.decoder != null) {
             try {
                 while(this.decoder.hasNext()) {
@@ -57,7 +55,7 @@ public class Post extends Request {
     }
 
 
-    private void writeHttpData(InterfaceHttpData data) {
+    private void writeHttpData(InterfaceHttpData data) throws IOException {
         if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
             Attribute attribute = (Attribute)data;
             String value = null;
@@ -80,10 +78,8 @@ public class Post extends Request {
 
                     outputChannel.transferFrom(inputChannel, 0L, inputChannel.size());
 
-                } catch (FileNotFoundException e1) {
-                    e1.printStackTrace();
-                } catch (IOException e2) {
-                    e2.printStackTrace();
+                } catch (IOException exception) {
+                    throw exception;
                 }
             } else {
                 System.out.println("no comp");

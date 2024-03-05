@@ -6,13 +6,15 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import neh.request.Post;
 
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
     private HttpRequest request;
     private Post postResponse;
-    private static final HttpDataFactory FACTORY = new DefaultHttpDataFactory(16384L);
+    // upload small file error solution https://github.com/netty/netty/issues/1727
+    private static final HttpDataFactory FACTORY = new DefaultHttpDataFactory(true);
     private HttpPostRequestDecoder decoder;
 
     static {
@@ -23,7 +25,7 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception{
 //        System.out.println(" -post- " + msg);
         if (msg instanceof HttpRequest) {
             this.request = (HttpRequest) msg;
@@ -57,21 +59,19 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
 
                 try {
                     this.decoder.offer(chunk);
-                } catch (HttpPostRequestDecoder.ErrorDataDecoderException ex) {
-                    ex.printStackTrace();
-                    postResponse.setContent("500");
+                    postResponse.execute();
+                } catch (HttpPostRequestDecoder.ErrorDataDecoderException | IOException ex) {
+//                    ex.printStackTrace();
+                    postResponse.setContent("500 ERROR");
                     postResponse.sendFullResponse(ctx.channel(), 500, true);
-                    return;
                 }
-
-                postResponse.execute();
 
                 if (msg instanceof LastHttpContent) {
                     postResponse.setContent("Foooooooooo~");
                     postResponse.sendFullResponse(ctx.channel(), 200, false);
+                    postResponse.reset();
                     this.decoder.destroy();
                     this.decoder = null;
-                    postResponse.reset();
                 }
             }
 

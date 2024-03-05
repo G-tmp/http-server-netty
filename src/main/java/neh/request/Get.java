@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Get extends Request {
-    public Get(ChannelHandlerContext ctx, HttpRequest request) throws URISyntaxException {
+    public Get(ChannelHandlerContext ctx, HttpRequest request) {
         this.ctx = ctx;
         this.httpRequest = request;
         String fullPath = URLDecoder.decode(request.uri(), StandardCharsets.UTF_8);
