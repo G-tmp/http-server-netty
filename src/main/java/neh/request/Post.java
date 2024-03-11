@@ -30,7 +30,7 @@ public class Post extends Request {
     }
 
     public void execute() throws IOException {
-//        System.out.println("saving");
+        System.out.print("▰");
         this.readHttpDataChunkByChunk();
     }
 

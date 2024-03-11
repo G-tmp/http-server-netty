@@ -5,6 +5,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import neh.request.Post;
+import neh.utils.HTMLMaker;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -62,12 +63,13 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
                     postResponse.execute();
                 } catch (HttpPostRequestDecoder.ErrorDataDecoderException | IOException ex) {
 //                    ex.printStackTrace();
-                    postResponse.setContent("500 ERROR");
+                    postResponse.setContent(HTMLMaker._500());
                     postResponse.sendFullResponse(ctx.channel(), 500, true);
                 }
 
                 if (msg instanceof LastHttpContent) {
-                    postResponse.setContent("Foooooooooo~");
+                    System.out.print("\n");
+                    postResponse.setContent(HTMLMaker.uploadSuccessful());
                     postResponse.sendFullResponse(ctx.channel(), 200, false);
                     postResponse.reset();
                     this.decoder.destroy();
