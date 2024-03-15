@@ -13,9 +13,8 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpServerCodec());
 //        pipeline.addLast(new HttpRequestHandler());
 
-        // Must pass on post first, i unable to resolve reference count problem
-        pipeline.addLast(new HttpPostHandler());
         pipeline.addLast(new HttpGetHandler());
+        pipeline.addLast(new HttpPostHandler());
 
     }
 }

@@ -27,7 +27,7 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception{
-//        System.out.println(" -post- " + msg);
+//        System.out.println(" -post- " + msg.getClass().getName());
         if (msg instanceof HttpRequest) {
             this.request = (HttpRequest) msg;
 

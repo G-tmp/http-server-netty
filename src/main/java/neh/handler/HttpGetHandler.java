@@ -2,6 +2,7 @@ package neh.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
@@ -16,12 +17,13 @@ public class HttpGetHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
-//        System.out.println(" -get- " + msg);
+//        System.out.println(" -get- " + msg.getClass().getName());
         if (msg instanceof HttpRequest) {
             this.request = (HttpRequest) msg;
 
             if (!this.request.method().equals(HttpMethod.GET)) {
                 ctx.fireChannelRead(msg);
+                return;
             }
 
             String url = URLDecoder.decode(this.request.uri(), StandardCharsets.UTF_8);
@@ -32,6 +34,8 @@ public class HttpGetHandler extends SimpleChannelInboundHandler<HttpObject> {
 
             get = new Get(ctx, this.request);
             get.execute();
+        } else if (msg instanceof HttpContent) {
+            ctx.fireChannelRead(((HttpContent) msg).retain());
         }
     }
 
