@@ -34,11 +34,19 @@ public class Get extends Request {
         File file = new File(Server.HOME, this.path);
         if (!file.exists()) {
             this.responseContent = HTMLMaker._404();
-            this.sendFullResponse(this.ctx.channel(), 404, true);
-        } else if (file.isDirectory()) {
+            this.sendFullResponse(this.ctx.channel(), 404, false);
+        }else if (!file.canRead()){
+            this.responseContent = HTMLMaker._403();
+            this.sendFullResponse(this.ctx.channel(), 403, false);
+        }else if (file.isDirectory()) {
+            if (!path.endsWith("/")){
+                redirect(ctx.channel(), path + "/");
+                return;
+            }
+
             if (this.parameters != null && this.parameters.containsKey("showHidden")) {
                 DefaultCookie cookie;
-                if (((String) ((List) this.parameters.get("showHidden")).remove(0)).equals("true")) {
+                if ("true".equals(parameters.remove("showHidden").remove(0))) {
                     cookie = new DefaultCookie("showHidden", "true");
                 } else {
                     cookie = new DefaultCookie("showHidden", "false");
@@ -69,6 +77,7 @@ public class Get extends Request {
                 this.sendFullResponse(this.ctx.channel(), 200, false);
             }
         } else if (file.isFile()) {
+            // The FileChannel is closed once the FileRegion was written.
             RandomAccessFile raf = new RandomAccessFile(file, "r");
             long fileLength = raf.length();
             boolean keepAlive = HttpUtil.isKeepAlive(this.httpRequest);
@@ -108,20 +117,15 @@ public class Get extends Request {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             response.headers().set(HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES);
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, fileLength);
-            if (mimeType != null) {
+            response.headers().set(HttpHeaderNames.CONNECTION, keepAlive ? HttpHeaderValues.KEEP_ALIVE : HttpHeaderValues.CLOSE);
+            if (mimeType == null) {
+                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+            } else {
                 if (mimeType.contains("text")) {
                     mimeType = mimeType + "; charset=UTF-8";
                 }
 
                 response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
-            } else {
-                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            }
-
-            if (keepAlive) {
-                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-            } else {
-                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
             }
 
             this.ctx.write(response);

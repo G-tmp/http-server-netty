@@ -52,18 +52,26 @@ public abstract class Request {
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
         response.headers().set(HttpHeaderNames.CONNECTION, (keepAlive ? HttpHeaderValues.KEEP_ALIVE : HttpHeaderValues.CLOSE));
         response.content().writeBytes(buf);
-        ChannelFuture future = channel.write(response);
+        ChannelFuture future = channel.writeAndFlush(response);
         if (!keepAlive) {
             future.addListener(ChannelFutureListener.CLOSE);
         }
 
     }
 
+    public void redirect(Channel channel, String location) {
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
+        response.headers().set(HttpHeaderNames.LOCATION, location);
+        ChannelFuture future = channel.writeAndFlush(response);
+        future.addListener(ChannelFutureListener.CLOSE);
+    }
+
+
     public void redirect(Channel channel, String location, Cookie cookie) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
         response.headers().set(HttpHeaderNames.LOCATION, location);
         response.headers().add(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
-        ChannelFuture future = channel.write(response);
+        ChannelFuture future = channel.writeAndFlush(response);
         future.addListener(ChannelFutureListener.CLOSE);
     }
 
