@@ -110,14 +110,16 @@ public class HTMLMaker {
         return String.valueOf(html);
     }
 
-    public static String uploadSuccessful() {
+    public static String uploadSuccessful(String content) {
         StringBuffer html = new StringBuffer();
         html.append("<!DOCTYPE html>\n");
         html.append("<html>\n<head>\n");
         html.append("<meta name=\"Content-Type\" content=\"text/html; charset=utf-8\">\n");
         html.append("<title>").append("Yea").append("</title>\n").append("</head>\n");
         html.append("<body>\n");
-        html.append("<center><h2>Foooooooooo~<h2><center> \n");
+        html.append("<center><h2>");
+        html.append(content);
+        html.append("<h2><center>\n");
         html.append("</body>\n");
         html.append("</html>");
         return String.valueOf(html);

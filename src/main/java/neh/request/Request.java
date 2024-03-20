@@ -31,6 +31,10 @@ public abstract class Request {
         this.responseContent = content;
     }
 
+    public String getContent() {
+        return responseContent;
+    }
+
     public void parseCookie() {
         String value = this.httpRequest.headers().get( HttpHeaderNames.COOKIE);
         if (value != null) {

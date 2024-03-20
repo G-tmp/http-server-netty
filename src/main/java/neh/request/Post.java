@@ -30,7 +30,7 @@ public class Post extends Request {
     }
 
     public void execute() throws IOException {
-        System.out.print("▰");
+//        System.out.print("▰");
         this.readHttpDataChunkByChunk();
     }
 
@@ -43,7 +43,6 @@ public class Post extends Request {
                         if (this.partialContent == data) {
                             this.partialContent = null;
                         }
-
                         this.writeHttpData(data);
                     }
                 }
@@ -56,22 +55,15 @@ public class Post extends Request {
 
 
     private void writeHttpData(InterfaceHttpData data) throws IOException {
-        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
-            Attribute attribute = (Attribute)data;
-            String value = null;
-
-            try {
-                value = attribute.getValue();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-
-            System.out.println(value);
-        } else if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
             FileUpload fileUpload = (FileUpload)data;
             if (fileUpload.isCompleted()) {
-                this.responseContent = "done";
                 File file = new File(new File(Server.HOME, this.path), fileUpload.getFilename());
+                if (file.exists()){
+                    responseContent = "overwrite file";
+                }else {
+                    this.responseContent = "new file";
+                }
 
                 try (FileChannel inputChannel = (new FileInputStream(fileUpload.getFile())).getChannel();
                      FileChannel outputChannel = (new FileOutputStream(file)).getChannel()) {

@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.multipart.*;
 import neh.request.Post;
 import neh.utils.HTMLMaker;
 
+import java.awt.image.RescaleOp;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +46,7 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
             try {
                 this.decoder = new HttpPostRequestDecoder(FACTORY, this.request);
             } catch (HttpPostRequestDecoder.ErrorDataDecoderException ex) {
+                decoder.cleanFiles();
                 ex.printStackTrace();
                 return;
             }
@@ -62,16 +64,17 @@ public class HttpPostHandler extends SimpleChannelInboundHandler<HttpObject> {
                     this.decoder.offer(chunk);
                     postResponse.execute();
                 } catch (HttpPostRequestDecoder.ErrorDataDecoderException | IOException ex) {
-//                    ex.printStackTrace();
+                    ex.printStackTrace();
                     postResponse.setContent(HTMLMaker._500());
                     postResponse.sendFullResponse(ctx.channel(), 500, true);
                 }
 
                 if (msg instanceof LastHttpContent) {
                     System.out.print("\n");
-                    postResponse.setContent(HTMLMaker.uploadSuccessful());
+                    postResponse.setContent(HTMLMaker.uploadSuccessful(postResponse.getContent()));
                     postResponse.sendFullResponse(ctx.channel(), 200, false);
                     postResponse.reset();
+                    decoder.cleanFiles();
                     this.decoder.destroy();
                     this.decoder = null;
                 }
